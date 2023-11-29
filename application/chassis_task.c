@@ -356,9 +356,12 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
   fp32 vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed[4];
   uint8_t i = 0;
   chassis_move_t *chassis_move_mode;
+  chassis_behaviour_e chassis_behaviour_mode;
 
   if (chassis_move_mode != NULL && switch_is_up(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
+    
+    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
     //遥控器控制
     if (chassis_move_multiple_control == NULL || vx_set_channel == 0 || vy_set_channel == 0)
     {
@@ -399,11 +402,11 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
     vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
     vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
     wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
-    chassis_move_multiple_control = CHASSIS_NO_FOLLOW_YAW;
   }
   else if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
     // 键盘控制
+    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
     if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_FRONT_KEY)
     {
       vx_set_channel = chassis_move_multiple_control->vx_max_speed;
@@ -420,11 +423,10 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
     {
       vy_set_channel = chassis_move_multiple_control->vy_min_speed;
     }
-    chassis_move_multiple_control = CHASSIS_NO_FOLLOW_YAW;
   }
   else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
-    chassis_move_multiple_control = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW;
+    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
   }
 
   chassis_vector_to_mecanum_wheel_speed(vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed);
@@ -481,6 +483,8 @@ void chassis_task(void const *pvParameters)
     // 键盘控制
     chassis_rc_control(&chassis_move);
     // 遥控器控制
+    chassis_control_test(&chassis_move)
+    //三种方式控制切换
 
     // make sure  one motor is online at least, so that the control CAN message can be received
     // 确保至少一个电机在线， 这样CAN控制包可以被接收到
