@@ -360,7 +360,6 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
 
   if (chassis_move_mode != NULL && switch_is_up(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
-    
     chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
     //遥控器控制
     if (chassis_move_multiple_control == NULL || vx_set_channel == 0 || vy_set_channel == 0)
@@ -426,6 +425,8 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
   }
   else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
+    wz_channel = 1500;
+    wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
     chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
   }
 
@@ -483,7 +484,7 @@ void chassis_task(void const *pvParameters)
     // 键盘控制
     chassis_rc_control(&chassis_move);
     // 遥控器控制
-    chassis_control_test(&chassis_move)
+    chassis_control_test(&chassis_move);
     //三种方式控制切换
 
     // make sure  one motor is online at least, so that the control CAN message can be received
