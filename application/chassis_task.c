@@ -268,7 +268,7 @@ static void chassis_keyboard_control(chassis_move_t *chassis_move_spin)
 
   if (chassis_move_spin->chassis_RC->key.v & KEY_PRESSED_OFFSET_E)
   {
-    wz = 1500;
+    wz = 1000;
     chassis_vector_to_mecanum_wheel_speed(0, 0, wz, wheel_speed);
     // 计算pid
     for (i = 0; i < 4; i++)
@@ -306,29 +306,33 @@ static void chassis_rc_control(chassis_move_t *chassis_move_rc_control)
   {
     vx_channel = chassis_move_rc_control->vx_max_speed;
   }
-  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
-  {
-    vx_channel = chassis_move_rc_control->vx_min_speed;
-  }
+//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
+//  {
+//    vx_channel = chassis_move_rc_control->vx_min_speed;
+//  }
 
   if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
   {
     vy_channel = chassis_move_rc_control->vy_max_speed;
   }
-  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
-  {
-    vy_channel = chassis_move_rc_control->vy_min_speed;
-  }
+//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
+//  {
+//    vy_channel = chassis_move_rc_control->vy_min_speed;
+//  }
 
   if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
   {
-    wz_channel = 1500;
+    wz_channel = 1000;
   }
-  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
-  {
-    wz_channel = 1500;
-  }
+//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
+//  {
+//    wz_channel = 1000;
+//  }
 
+	chassis_move_rc_control->vx_set = vx_set_channel;
+  chassis_move_rc_control->vy_set = vy_set_channel;
+  chassis_move_rc_control->wz_set = wz_set_channel;
+	
   vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
   vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
   wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
@@ -343,9 +347,7 @@ static void chassis_rc_control(chassis_move_t *chassis_move_rc_control)
   {
     chassis_move_rc_control->motor_chassis[i].give_current = (int16_t)(chassis_move_rc_control->motor_speed_pid[i].out);
   }
-  chassis_move_rc_control->vx_set = vx_set_channel;
-  chassis_move_rc_control->vy_set = vy_set_channel;
-  chassis_move_rc_control->wz_set = wz_set_channel;
+
 }
 
 static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
@@ -391,11 +393,11 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
 
     if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
     {
-      wz_channel = 1500;
+      wz_channel = 1000;
     }
     else if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
     {
-      wz_channel = 1500;
+      wz_channel = 1000;
     }
 
     vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
@@ -425,7 +427,7 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
   }
   else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   {
-    wz_channel = 1500;
+    wz_channel = 1000;
     wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
     chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
   }
@@ -480,11 +482,11 @@ void chassis_task(void const *pvParameters)
 
     // chassis_control_test();
 
-    chassis_keyboard_control(&chassis_move);
+    //chassis_keyboard_control(&chassis_move);
     // 键盘控制
     chassis_rc_control(&chassis_move);
     // 遥控器控制
-    chassis_control_test(&chassis_move);
+    //chassis_control_test(&chassis_move);
     //三种方式控制切换
 
     // make sure  one motor is online at least, so that the control CAN message can be received
