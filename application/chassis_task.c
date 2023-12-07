@@ -297,47 +297,20 @@ static void chassis_rc_control(chassis_move_t *chassis_move_rc_control)
   {
     return;
   }
+  
+  chassis_move_rc_control->vx_set = vx;
+  chassis_move_rc_control->vy_set = vy;
+  chassis_move_rc_control->wz_set = wz;
 
   rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx_channel, CHASSIS_RC_DEADLINE);
   rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
   rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz_channel, CHASSIS_RC_DEADLINE);
 
-  if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
-  {
-    vx_channel = chassis_move_rc_control->vx_max_speed;
-  }
-//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
-//  {
-//    vx_channel = chassis_move_rc_control->vx_min_speed;
-//  }
+  vx = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL] * CHASSIS_VX_RC_SEN;
+  vy = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL] * CHASSIS_VY_RC_SEN;
+  wz = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * CHASSIS_WZ_RC_SEN;
 
-  if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
-  {
-    vy_channel = chassis_move_rc_control->vy_max_speed;
-  }
-//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
-//  {
-//    vy_channel = chassis_move_rc_control->vy_min_speed;
-//  }
-
-  if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
-  {
-    wz_channel = 1000;
-  }
-//  else if (chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
-//  {
-//    wz_channel = 1000;
-//  }
-
-	chassis_move_rc_control->vx_set = vx_set_channel;
-  chassis_move_rc_control->vy_set = vy_set_channel;
-  chassis_move_rc_control->wz_set = wz_set_channel;
-	
-  vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
-  vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
-  wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
-
-  chassis_vector_to_mecanum_wheel_speed(vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed);
+  chassis_vector_to_mecanum_wheel_speed(vx, vy, wz, wheel_speed);
 
   for (i = 0; i < 4; i++)
   {
@@ -482,12 +455,12 @@ void chassis_task(void const *pvParameters)
 
     // chassis_control_test();
 
-    //chassis_keyboard_control(&chassis_move);
-    // 键盘控制
+    // chassis_keyboard_control(&chassis_move);
+    //  键盘控制
     chassis_rc_control(&chassis_move);
     // 遥控器控制
-    //chassis_control_test(&chassis_move);
-    //三种方式控制切换
+    // chassis_control_test(&chassis_move);
+    // 三种方式控制切换
 
     // make sure  one motor is online at least, so that the control CAN message can be received
     // 确保至少一个电机在线， 这样CAN控制包可以被接收到
