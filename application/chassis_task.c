@@ -256,167 +256,160 @@ static void chassis_v_to_mecanum_wheel_speed(void)
   wheel3_err_last = wheel3_err;
   wheel4_err_last = wheel4_err;
 }
+
 extern void chassis_vector_to_mecanum_wheel_speed(const fp32 vx_set, const fp32 vy_set, const fp32 wz_set, fp32 wheel_speed[4]);
 static void chassis_keyboard_control(chassis_move_t *chassis_move_spin)
+// 键盘控制底盘运动
 {
-  // 键盘控制底盘运动
-  vx = 0;
-  vy = 0;
-  wz = 0;
   fp32 wheel_speed[4];
   uint8_t i = 0;
 
+  // 初始化
+  vx = 0;
+  vy = 0;
+  wz = 0;
+
+  // 直接赋值
   if (chassis_move_spin->chassis_RC->key.v & KEY_PRESSED_OFFSET_E)
   {
-    wz = 1000;
-    chassis_vector_to_mecanum_wheel_speed(0, 0, wz, wheel_speed);
-    // 计算pid
-    for (i = 0; i < 4; i++)
-    {
-      PID_calc(&chassis_move_spin->motor_speed_pid[i], chassis_move_spin->motor_chassis[i].speed, wheel_speed[i]);
-    }
-    // 赋值电流
-    for (i = 0; i < 4; i++)
-    {
-      chassis_move_spin->motor_chassis[i].give_current = (int16_t)(chassis_move_spin->motor_speed_pid[i].out);
-    }
+    wz = 1500;
   }
+
+  // 麦轮解算
+  chassis_vector_to_mecanum_wheel_speed(0, 0, wz, wheel_speed);
+
+  // 计算PID
+  for (i = 0; i < 4; i++)
+  {
+    PID_calc(&chassis_move_spin->motor_speed_pid[i], chassis_move_spin->motor_chassis[i].speed, wheel_speed[i]);
+  }
+
+  // 赋值电流
+  for (i = 0; i < 4; i++)
+  {
+    chassis_move_spin->motor_chassis[i].give_current = (int16_t)(chassis_move_spin->motor_speed_pid[i].out);
+  }
+
   chassis_move_spin->wz_set = wz;
 }
 
 static void chassis_rc_control(chassis_move_t *chassis_move_rc_control)
+// 遥控器控制底盘运动
 {
-  // 遥控器控制底盘运动
-  //	提示：解算 PID 调用遥控器通道值实现vx vy wz 例如：调用#define CHASSIS_X_CHANNEL 1 此宏定义
-  // chassis_no_follow_yaw_control(vx_set, vy_set, wz_set, chassis_move_rc_control);
-  int16_t vx_channel = 0, vy_channel = 0, wz_channel = 0;
-  fp32 vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed[4];
+  fp32 wheel_speed[4];
   uint8_t i = 0;
 
-  if (chassis_move_rc_control == NULL || vx_set_channel == 0 || vy_set_channel == 0)
-  {
-    return;
-  }
-  
-  chassis_move_rc_control->vx_set = vx;
-  chassis_move_rc_control->vy_set = vy;
-  chassis_move_rc_control->wz_set = wz;
+  // 初始化
+  vx = 0;
+  vy = 0;
+  wz = 0;
 
-  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx_channel, CHASSIS_RC_DEADLINE);
-  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
-  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz_channel, CHASSIS_RC_DEADLINE);
+  // 死区限制
+  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx, CHASSIS_RC_DEADLINE);
+  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy, CHASSIS_RC_DEADLINE);
+  rc_deadband_limit(chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz, CHASSIS_RC_DEADLINE);
 
+  // 速度计算，比例系数调整为原来的1/2
   vx = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL] * CHASSIS_VX_RC_SEN;
   vy = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL] * CHASSIS_VY_RC_SEN;
-  wz = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * CHASSIS_WZ_RC_SEN;
+  wz = chassis_move_rc_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * (-CHASSIS_WZ_RC_SEN);
 
+  // 麦轮解算
   chassis_vector_to_mecanum_wheel_speed(vx, vy, wz, wheel_speed);
 
+  // 计算PID
   for (i = 0; i < 4; i++)
   {
     PID_calc(&chassis_move_rc_control->motor_speed_pid[i], chassis_move_rc_control->motor_chassis[i].speed, wheel_speed[i]);
   }
+
+  //  赋值电流
   for (i = 0; i < 4; i++)
   {
     chassis_move_rc_control->motor_chassis[i].give_current = (int16_t)(chassis_move_rc_control->motor_speed_pid[i].out);
   }
 
+  chassis_move_rc_control->vx_set = vx;
+  chassis_move_rc_control->vy_set = vy;
+  chassis_move_rc_control->wz_set = wz;
 }
 
 static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
+// 遥控器三挡位切换
+// 分别实现 遥控器控制 键盘控制 和伪小陀螺
 {
-  // 实现 遥控器三个档 分别实现 遥控器控制 键盘控制 和伪小陀螺
-  // 提示： 伪小陀螺直接给 wz
-  int16_t vx_channel = 0, vy_channel = 0, wz_channel = 0;
-  fp32 vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed[4];
+  fp32 wheel_speed[4];
   uint8_t i = 0;
-  chassis_move_t *chassis_move_mode;
-  chassis_behaviour_e chassis_behaviour_mode;
 
-  if (chassis_move_mode != NULL && switch_is_up(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  // 初始化
+  vx = 0;
+  vy = 0;
+  wz = 0;
+
+  if (chassis_move_multiple_control != NULL && switch_is_up(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  // 遥控器控制(同2)
   {
-    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
-    //遥控器控制
-    if (chassis_move_multiple_control == NULL || vx_set_channel == 0 || vy_set_channel == 0)
-    {
-      return;
-    }
+    // 死区限制
+    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy, CHASSIS_RC_DEADLINE);
+    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz, CHASSIS_RC_DEADLINE);
 
-    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL], vx_channel, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL], vy_channel, CHASSIS_RC_DEADLINE);
-    rc_deadband_limit(chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL], wz_channel, CHASSIS_RC_DEADLINE);
+    // 速度计算，比例系数调整为原来的1/2
+    vx = chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL] * CHASSIS_VX_RC_SEN;
+    vy = chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL] * CHASSIS_VY_RC_SEN;
+    wz = chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * (-CHASSIS_WZ_RC_SEN);
 
-    if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
-    {
-      vx_channel = chassis_move_multiple_control->vx_max_speed;
-    }
-    else if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_X_CHANNEL])
-    {
-      vx_channel = chassis_move_multiple_control->vx_min_speed;
-    }
-
-    if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
-    {
-      vy_channel = chassis_move_multiple_control->vy_max_speed;
-    }
-    else if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL])
-    {
-      vy_channel = chassis_move_multiple_control->vy_min_speed;
-    }
-
-    if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
-    {
-      wz_channel = 1000;
-    }
-    else if (chassis_move_multiple_control->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL])
-    {
-      wz_channel = 1000;
-    }
-
-    vx_set_channel = vx_channel * CHASSIS_VX_RC_SEN;
-    vy_set_channel = vy_channel * -CHASSIS_VY_RC_SEN;
-    wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
+    chassis_move_multiple_control->vx_set = vx;
+    chassis_move_multiple_control->vy_set = vy;
+    chassis_move_multiple_control->wz_set = wz;
   }
-  else if (switch_is_mid(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  else if (switch_is_mid(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  // 键盘控制
   {
-    // 键盘控制
-    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
     if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_FRONT_KEY)
     {
-      vx_set_channel = chassis_move_multiple_control->vx_max_speed;
+      vx = NORMAL_MAX_CHASSIS_SPEED_X;
     }
     else if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_BACK_KEY)
     {
-      vx_set_channel = chassis_move_multiple_control->vx_min_speed;
+      vx = -NORMAL_MAX_CHASSIS_SPEED_X;
     }
     if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_LEFT_KEY)
     {
-      vy_set_channel = chassis_move_multiple_control->vy_max_speed;
+      vy = NORMAL_MAX_CHASSIS_SPEED_Y;
     }
     else if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
     {
-      vy_set_channel = chassis_move_multiple_control->vy_min_speed;
+      vy = -NORMAL_MAX_CHASSIS_SPEED_Y;
     }
   }
-  else if (switch_is_down(chassis_move_mode->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  else if (switch_is_down(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  // 伪小陀螺(同1)
   {
-    wz_channel = 1000;
-    wz_set_channel = wz_channel * CHASSIS_WZ_RC_SEN;
-    chassis_behaviour_mode = CHASSIS_NO_FOLLOW_YAW;
+    if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_E)
+    {
+      wz = 1500;
+    }
   }
 
-  chassis_vector_to_mecanum_wheel_speed(vx_set_channel, vy_set_channel, wz_set_channel, wheel_speed);
+  // 麦轮解算
+  chassis_vector_to_mecanum_wheel_speed(vx, vy, wz, wheel_speed);
+
+  // 计算PID
   for (i = 0; i < 4; i++)
   {
     PID_calc(&chassis_move_multiple_control->motor_speed_pid[i], chassis_move_multiple_control->motor_chassis[i].speed, wheel_speed[i]);
   }
+
+  //  赋值电流
   for (i = 0; i < 4; i++)
   {
     chassis_move_multiple_control->motor_chassis[i].give_current = (int16_t)(chassis_move_multiple_control->motor_speed_pid[i].out);
   }
-  chassis_move_multiple_control->vx_set = vx_set_channel;
-  chassis_move_multiple_control->vy_set = vy_set_channel;
-  chassis_move_multiple_control->wz_set = wz_set_channel;
+
+  chassis_move_multiple_control->vx_set = vx;
+  chassis_move_multiple_control->vy_set = vy;
+  chassis_move_multiple_control->wz_set = wz;
 }
 
 void chassis_task(void const *pvParameters)
@@ -844,10 +837,10 @@ static void chassis_vector_to_mecanum_wheel_speed(const fp32 vx_set, const fp32 
 {
   // because the gimbal is in front of chassis, when chassis rotates, wheel 0 and wheel 1 should be slower and wheel 2 and wheel 3 should be faster
   // 旋转的时候， 由于云台靠前，所以是前面两轮 0 ，1 旋转的速度变慢， 后面两轮 2,3 旋转的速度变快
-  wheel_speed[0] = -vx_set - vy_set + (CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
-  wheel_speed[1] = vx_set - vy_set + (CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
-  wheel_speed[2] = vx_set + vy_set + (-CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
-  wheel_speed[3] = -vx_set + vy_set + (-CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
+  wheel_speed[0] = -vx_set + vy_set + (CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
+  wheel_speed[1] = vx_set + vy_set + (CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
+  wheel_speed[2] = vx_set - vy_set + (-CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
+  wheel_speed[3] = -vx_set - vy_set + (-CHASSIS_WZ_SET_SCALE - 1.0f) * MOTOR_DISTANCE_TO_CENTER * wz_set;
 }
 
 /**

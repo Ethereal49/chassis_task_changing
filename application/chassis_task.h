@@ -31,10 +31,10 @@
 
 //the channel num of controlling vertial speed 
 //前后的遥控器通道号码
-#define CHASSIS_X_CHANNEL 1
+#define CHASSIS_X_CHANNEL 0
 //the channel num of controlling horizontal speed
 //左右的遥控器通道号码
-#define CHASSIS_Y_CHANNEL 0
+#define CHASSIS_Y_CHANNEL 1
 
 //in some mode, can use remote control to control rotation speed
 //在特殊模式下，可以通过遥控器控制旋转
@@ -45,16 +45,16 @@
 #define CHASSIS_MODE_CHANNEL 0
 //rocker value (max 660) change to vertial speed (m/s) 
 //遥控器前进摇杆（max 660）转化成车体前进速度（m/s）的比例
-#define CHASSIS_VX_RC_SEN 0.006f
+#define CHASSIS_VX_RC_SEN 0.003f
 //rocker value (max 660) change to horizontal speed (m/s)
 //遥控器左右摇杆（max 660）转化成车体左右速度（m/s）的比例
-#define CHASSIS_VY_RC_SEN 0.005f
+#define CHASSIS_VY_RC_SEN 0.0025f
 //in following yaw angle mode, rocker value add to angle 
 //跟随底盘yaw模式下，遥控器的yaw遥杆（max 660）增加到车体角度的比例
 #define CHASSIS_ANGLE_Z_RC_SEN 0.000002f
 //in not following yaw angle mode, rocker value change to rotation speed
 //不跟随云台的时候 遥控器的yaw遥杆（max 660）转化成车体旋转速度的比例
-#define CHASSIS_WZ_RC_SEN 0.01f
+#define CHASSIS_WZ_RC_SEN 0.005f
 
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f

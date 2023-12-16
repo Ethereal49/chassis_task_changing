@@ -2,7 +2,7 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   * @file       usb_task.c/h
   * @brief      usb outputs the error message.usbÊä³ö´íÎóÐÅÏ¢
-  * @note       
+  * @note
   * @history
   *  Version    Date            Author          Modification
   *  V1.0.0     Nov-11-2019     RM              1. done
@@ -29,9 +29,8 @@
 #include "gimbal_task.h"
 #include "chassis_task.h"
 
-
 #include "referee.h"
-static void usb_printf(const char *fmt,...);
+static void usb_printf(const char *fmt, ...);
 
 static uint8_t usb_buf[256];
 static const char status[2][7] = {"OK", "ERROR!"};
@@ -45,39 +44,32 @@ extern ext_power_heat_data_t power_heat_data_t;
 
 extern int16_t wheel1_v_set;
 
-
-
 int16_t a_max = 0;
 
-
-void usb_task(void const * argument)
+void usb_task(void const *argument)
 {
-    MX_USB_DEVICE_Init();
-    error_list_usb_local = get_error_list_point();
+  MX_USB_DEVICE_Init();
+  error_list_usb_local = get_error_list_point();
 
+  while (1)
+  {
+    osDelay(1000);
 
-    while(1)
-    {
-        osDelay(1000);
-				
-        usb_printf("%d\r\n",gimbal_control.gimbal_yaw_motor.gimbal_motor_measure->ecd);
-				
-		}
-		
-
+    // usb_printf("%d\n",gimbal_control.gimbal_yaw_motor.gimbal_motor_measure->ecd);
+    // usb_printf("vx=%d,vy=%d,wz=%d,%d\r\n", chassis_move.vx, chassis_move.vy, chassis_move.wz, chassis_move.motor_chassis[4].speed);
+  }
 }
 
-static void usb_printf(const char *fmt,...)
+static void usb_pr0intf(const char *fmt, ...)
 {
-    static va_list ap;
-    uint16_t len = 0;
+  static va_list ap;
+  uint16_t len = 0;
 
-    va_start(ap, fmt);
+  va_start(ap, fmt);
 
-    len = vsprintf((char *)usb_buf, fmt, ap);
+  len = vsprintf((char *)usb_buf, fmt, ap);
 
-    va_end(ap);
+  va_end(ap);
 
-
-    CDC_Transmit_FS(usb_buf, len);
+  CDC_Transmit_FS(usb_buf, len);
 }
