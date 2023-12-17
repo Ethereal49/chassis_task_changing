@@ -346,7 +346,9 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
   vy = 0;
   wz = 0;
 
-  if (chassis_move_multiple_control != NULL && switch_is_up(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
+  //chassis_move_multiple_control != NULL && 
+
+  if (switch_is_up(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   // 遥控器控制(同2)
   {
     // 死区限制
@@ -366,30 +368,33 @@ static void chassis_control_test(chassis_move_t *chassis_move_multiple_control)
   else if (switch_is_mid(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   // 键盘控制
   {
-    if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_FRONT_KEY)
+    if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_W)
     {
-      vx = NORMAL_MAX_CHASSIS_SPEED_X;
+      // vx = NORMAL_MAX_CHASSIS_SPEED_X;
+      vx = 500;
     }
-    else if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_BACK_KEY)
+    else if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_S)
     {
-      vx = -NORMAL_MAX_CHASSIS_SPEED_X;
+      // vx = -NORMAL_MAX_CHASSIS_SPEED_X;
+      vx = -500;
     }
-    if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_LEFT_KEY)
+    if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_A)
     {
-      vy = NORMAL_MAX_CHASSIS_SPEED_Y;
+      // vy = NORMAL_MAX_CHASSIS_SPEED_Y;
+      vy = 500;
     }
-    else if (chassis_move_multiple_control->chassis_RC->key.v & CHASSIS_RIGHT_KEY)
+    else if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_D)
     {
-      vy = -NORMAL_MAX_CHASSIS_SPEED_Y;
+      // vy = -NORMAL_MAX_CHASSIS_SPEED_Y;
+      vy = -500;
     }
   }
   else if (switch_is_down(chassis_move_multiple_control->chassis_RC->rc.s[CHASSIS_MODE_CHANNEL]))
   // 伪小陀螺(同1)
   {
-    if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_E)
-    {
-      wz = 1500;
-    }
+    wz = 1000;
+    // if (chassis_move_multiple_control->chassis_RC->key.v & KEY_PRESSED_OFFSET_E)
+    // {}
   }
 
   // 麦轮解算
@@ -450,9 +455,9 @@ void chassis_task(void const *pvParameters)
 
     // chassis_keyboard_control(&chassis_move);
     //  键盘控制
-    chassis_rc_control(&chassis_move);
+    // chassis_rc_control(&chassis_move);
     // 遥控器控制
-    // chassis_control_test(&chassis_move);
+    chassis_control_test(&chassis_move);
     // 三种方式控制切换
 
     // make sure  one motor is online at least, so that the control CAN message can be received

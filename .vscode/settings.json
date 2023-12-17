@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "limits": "c",
-        "main.h": "c"
+        "main.h": "c",
+        "*.tcc": "c"
     }
 }
